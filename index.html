@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>La infraestructura de seguridad de blockchain — presentación</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #2b2318; --surface: #3d3222; --surface-2: #493c28; --surface-3: #54452e; --border: #6b5a3d;
+    --ink: #f2e8d0; --ink-dim: #c4b393; --ink-faint: #8f7d5f;
+    --brand: #d1a53c; --brand-light: #e3bd5e; --brand-bg: #453a20;
+    --amber: #a35f2f; --amber-bg: #47371f;
+    --ink-invert: #2b2318;
+    --seal: #b3543a; --seal-bg: #452c1f;
+    --circuit: #26324a;
+    --radius: 12px;
+    --font-body: 'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'SF Mono', Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.55;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='90'%3E%3Cg fill='none' stroke='%23342a1c' stroke-width='1.5'%3E%3Cpath d='M10 0 V25 H45'/%3E%3Cpath d='M90 15 H60 V45'/%3E%3Cpath d='M0 55 H20 V90'/%3E%3Cpath d='M55 90 V65 H90'/%3E%3Cpath d='M45 25 V45 H60'/%3E%3C/g%3E%3Cg fill='%23342a1c'%3E%3Ccircle cx='10' cy='25' r='2'/%3E%3Ccircle cx='45' cy='25' r='2'/%3E%3Ccircle cx='60' cy='45' r='2'/%3E%3Ccircle cx='20' cy='55' r='2'/%3E%3Ccircle cx='55' cy='65' r='2'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 220px;
+  }
+  h1, h2, h3 { font-family: var(--font-body); color: var(--ink); margin: 0 0 10px; }
+  p { margin: 0 0 12px; color: var(--ink-dim); }
+  .mono { font-family: var(--font-mono); }
+  ul, ol { margin: 0 0 12px; padding-left: 20px; }
+  li { margin-bottom: 6px; }
+
+  /* ---------- Deck shell ---------- */
+  .deck { min-height: 100vh; display: flex; flex-direction: column; }
+  .deck-top { display: flex; align-items: center; justify-content: space-between; padding: 16px 32px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; z-index: 10; }
+  .deck-top .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand); }
+  .dots { display: flex; gap: 8px; }
+  .dot-btn { width: 10px; height: 10px; border-radius: 50%; border: none; background: var(--border); cursor: pointer; padding: 0; }
+  .dot-btn.active { background: var(--brand); width: 22px; border-radius: 6px; }
+  .deck-top .counter { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
+
+  .slides { flex: 1; position: relative; }
+  .slide { display: none; padding: 44px 48px 90px; max-width: 980px; margin: 0 auto; min-height: calc(100vh - 130px); }
+  .slide.active { display: block; }
+
+  .slide-eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand); margin-bottom: 10px; }
+  .slide h1.slide-title { font-size: clamp(26px, 3.4vw, 38px); font-weight: 700; margin-bottom: 10px; }
+  .slide-lede { font-size: 16px; color: var(--ink-dim); max-width: 66ch; margin-bottom: 26px; }
+
+  .deck-bottom { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; border-top: 1px solid var(--border); background: var(--surface); position: sticky; bottom: 0; }
+
+  button.btn { font-family: var(--font-body); font-weight: 600; font-size: 13.5px; cursor: pointer; border-radius: 9px; border: 1px solid transparent; padding: 10px 18px; }
+  button.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-brand { background: var(--brand); color: var(--ink-invert); }
+  .btn-brand:hover:not(:disabled) { background: var(--brand-light); }
+  .btn-outline { background: transparent; color: var(--ink); border-color: var(--border); }
+  .btn-outline:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+  .btn-amber { background: var(--amber); color: white; }
+  .btn-amber:hover:not(:disabled) { filter: brightness(1.08); }
+
+  /* ---------- Slide 1: overview + animation ---------- */
+  .topic-map { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 32px; }
+  .topic-chip { flex: 1; min-width: 220px; background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 14px 16px; }
+  .topic-chip .tc-eyebrow { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; color: var(--brand); letter-spacing: 0.05em; }
+  .topic-chip h3 { font-size: 14.5px; margin: 4px 0 0; }
+
+  .anim-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px 26px 26px; }
+  .anim-caption { min-height: 46px; font-size: 15px; color: var(--ink); font-weight: 500; margin: 16px 0 4px; padding: 12px 16px; background: var(--brand-bg); border-radius: 9px; }
+  .anim-controls { display: flex; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .anim-step-count { font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint); }
+
+  svg#anim-scene { display: block; width: 100%; height: auto; }
+  .an-label { font-family: var(--font-body); font-size: 11px; fill: var(--ink-dim); }
+  .an-actor circle { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; transition: fill 0.35s ease, stroke 0.35s ease; }
+  .an-actor text.an-initial { font-family: var(--font-body); font-weight: 600; font-size: 15px; fill: var(--ink-dim); text-anchor: middle; transition: fill 0.35s ease; }
+  .an-actor.active circle { fill: var(--brand); stroke: var(--brand); }
+  .an-actor.active text.an-initial { fill: var(--ink-invert); }
+
+  .an-fanline { stroke: var(--brand); stroke-width: 1.6; fill: none; transition: stroke-dashoffset 0.7s ease; }
+  .an-fanline.drawn { stroke-dashoffset: 0 !important; }
+  #fan-1 { stroke-dasharray: 96; stroke-dashoffset: 96; }
+  #fan-2 { stroke-dasharray: 197; stroke-dashoffset: 197; }
+  #fan-3 { stroke-dasharray: 355; stroke-dashoffset: 355; }
+  #fan-4 { stroke-dasharray: 521; stroke-dashoffset: 521; }
+
+  .an-packet { opacity: 0; transition: opacity 0.25s ease, transform 0.7s cubic-bezier(.4,0,.2,1); transform: translate(0,0); }
+  .an-packet.sent { opacity: 1; transform: translate(var(--dx), var(--dy)); }
+
+  .an-node rect { fill: var(--surface-2); stroke: var(--border); stroke-width: 1.5; transition: stroke 0.3s ease, fill 0.3s ease; }
+  .an-node line { stroke: var(--border); stroke-width: 1.5; transition: stroke 0.3s ease; }
+  .an-node.pulse rect { stroke: var(--amber); fill: var(--amber-bg); }
+  .an-node.pulse line { stroke: var(--amber); }
+  .an-node.synced rect { stroke: var(--brand); fill: var(--brand-bg); }
+  .an-node.synced line { stroke: var(--brand); }
+  .an-node-check { opacity: 0; transition: opacity 0.3s ease; font-size: 13px; fill: var(--brand); font-weight: 700; }
+  .an-node.synced .an-node-check { opacity: 1; }
+
+  .an-block rect.an-block-body { fill: var(--surface); stroke: var(--border); stroke-width: 1.5; stroke-dasharray: 0; transition: fill 0.4s ease, stroke 0.4s ease; }
+  .an-block.ghost rect.an-block-body { fill: transparent; stroke-dasharray: 4 4; stroke: var(--ink-faint); }
+  .an-block .an-block-content { opacity: 0; transition: opacity 0.4s ease 0.15s; }
+  .an-block.filled rect.an-block-body { fill: var(--brand-bg); stroke: var(--brand); }
+  .an-block.filled .an-block-content { opacity: 1; }
+
+  .an-link { stroke: var(--ink-faint); stroke-width: 2; stroke-dasharray: 26; stroke-dashoffset: 26; transition: stroke-dashoffset 0.5s ease, stroke 0.4s ease; }
+  .an-link.drawn { stroke-dashoffset: 0; stroke: var(--brand); }
+
+  /* ---------- Theory content (condensed for slides) ---------- */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+  @media (max-width: 900px) { .grid-2 { grid-template-columns: 1fr; } }
+
+  .theory-condensed h3 { font-size: 15px; font-weight: 600; margin-top: 16px; color: var(--brand); }
+  .theory-condensed li { font-size: 14px; color: var(--ink); }
+  .theory-condensed p { font-size: 14px; }
+
+  .concept-box { background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--brand); border-radius: 0 var(--radius) var(--radius) 0; padding: 13px 16px; margin: 12px 0; }
+  .concept-box .cb-label { font-family: var(--font-mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--brand); display: block; margin-bottom: 5px; font-weight: 600; }
+  .concept-box p:last-child { margin-bottom: 0; font-size: 13px; }
+  .insight-box { border-left-color: var(--seal); }
+  .insight-box .cb-label { color: var(--seal); }
+
+  table.compare { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 10px 0; background: var(--surface); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  table.compare th { background: var(--bg); color: var(--brand-light); padding: 7px 10px; text-align: left; font-weight: 600; border-bottom: 1px solid var(--border); }
+  table.compare td { padding: 6px 10px; border-bottom: 1px solid var(--border); color: var(--ink-dim); }
+  table.compare tr:last-child td { border-bottom: none; }
+
+  /* ---------- Practice widgets (reused) ---------- */
+  .practice-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; }
+  textarea, input[type="text"] { width: 100%; background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; color: var(--ink); font-family: var(--font-body); font-size: 14px; padding: 11px 13px; resize: vertical; }
+  textarea:focus, input[type="text"]:focus, button:focus-visible { outline: 2px solid var(--brand-light); outline-offset: 2px; }
+  .field-label { font-family: var(--font-mono); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-faint); display: block; margin-bottom: 7px; }
+  .hash-box { background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px; padding: 11px 13px; font-family: var(--font-mono); font-size: 12px; word-break: break-all; color: var(--brand); min-height: 16px; }
+  .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .result-badge { font-family: var(--font-mono); font-size: 12px; padding: 6px 11px; border-radius: 6px; display: inline-block; }
+  .result-ok { background: var(--brand-bg); color: var(--brand); }
+  .result-bad { background: var(--seal-bg); color: var(--seal); }
+
+  .seal { width: 42px; height: 42px; opacity: 0; transform: scale(0.4); }
+  .seal.show { opacity: 1; animation: stamp-in 0.5s cubic-bezier(.32,1.6,.5,1) forwards; }
+  .seal svg circle.seal-ring { fill: var(--brand); stroke: #6b4a26; stroke-width: 2; }
+  .seal svg path.seal-check { fill: none; stroke: var(--ink-invert); stroke-width: 8; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 62; stroke-dashoffset: 62; }
+  .seal.show svg path.seal-check { animation: draw-check 0.3s ease forwards 0.22s; }
+  @keyframes stamp-in { 0% { opacity: 0; transform: scale(2.2) rotate(-16deg); } 55% { opacity: 1; transform: scale(0.9) rotate(3deg); } 100% { opacity: 1; transform: scale(1) rotate(0); } }
+  @keyframes draw-check { to { stroke-dashoffset: 0; } }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+  .tab-btn { background: transparent; border: none; border-radius: 0; color: var(--ink-dim); padding: 8px 4px; margin-right: 18px; border-bottom: 2px solid transparent; font-size: 13.5px; font-family: var(--font-body); cursor: pointer; }
+  .tab-btn.active { color: var(--ink); border-bottom-color: var(--amber); font-weight: 600; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .difficulty-pills { display: flex; gap: 8px; margin-top: 4px; }
+  .diff-pill { background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-dim); border-radius: 999px; padding: 6px 13px; font-size: 12px; cursor: pointer; }
+  .diff-pill.active { border-color: var(--amber); color: var(--amber); background: var(--amber-bg); }
+
+  .mine-stats { display: flex; gap: 24px; margin: 14px 0; flex-wrap: wrap; }
+  .mine-stat .num { font-family: var(--font-mono); font-size: 20px; color: var(--amber); font-weight: 600; }
+  .mine-stat .lbl { font-family: var(--font-mono); font-size: 9.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); }
+
+  .validators { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin: 14px 0; }
+  .validator-card { background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; padding: 11px; text-align: center; transition: border-color 0.25s ease, transform 0.2s ease; }
+  .validator-card .name { font-size: 12px; color: var(--ink); margin-bottom: 7px; font-weight: 500; }
+  .validator-bar-track { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; height: 48px; display: flex; align-items: flex-end; overflow: hidden; }
+  .validator-bar-fill { width: 100%; background: var(--brand); border-radius: 5px 5px 0 0; transition: height 0.4s ease, background 0.4s ease; }
+  .validator-card .stake { font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-faint); margin-top: 6px; }
+  .validator-card.spinning { border-color: var(--amber); }
+  .validator-card.selected { border-color: var(--amber); box-shadow: 0 0 0 1px var(--amber); transform: translateY(-2px); }
+  .validator-card.slashed .validator-bar-fill { background: var(--seal); }
+  .validator-card.slashed { animation: shake 0.4s ease; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+  .chain-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .chain-label { width: 120px; flex-shrink: 0; font-size: 12px; color: var(--ink-dim); }
+  .chain-track { flex: 1; display: flex; flex-wrap: wrap; gap: 5px; min-height: 26px; }
+  .chain-block { width: 19px; height: 19px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-family: var(--font-mono); font-size: 8px; animation: block-in 0.25s ease; flex-shrink: 0; }
+  .chain-block.honest { background: var(--brand); color: var(--ink-invert); }
+  .chain-block.attacker { background: var(--seal); color: white; }
+  @keyframes block-in { from { opacity: 0; transform: translateY(5px) scale(0.85); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  input[type="range"] { width: 100%; accent-color: var(--amber); }
+
+  @media (max-width: 720px) {
+    .deck-top, .deck-bottom { padding: 12px 18px; }
+    .slide { padding: 26px 20px 70px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+  <div class="deck-top">
+    <span class="eyebrow">Tecnologías de Seguridad · La Infraestructura de Seguridad</span>
+    <div class="dots">
+      <button class="dot-btn active" data-slide="0" aria-label="Pantalla 1"></button>
+      <button class="dot-btn" data-slide="1" aria-label="Pantalla 2"></button>
+      <button class="dot-btn" data-slide="2" aria-label="Pantalla 3"></button>
+      <button class="dot-btn" data-slide="3" aria-label="Pantalla 4"></button>
+    </div>
+    <span class="counter"><span id="slide-counter">1</span> / 4</span>
+  </div>
+
+  <div class="slides">
+
+    <!-- ===== SLIDE 1: INTRO ===== -->
+    <section class="slide active" data-slide-panel>
+      <div class="slide-eyebrow">Pantalla 1 de 4 — Introducción</div>
+      <h1 class="slide-title">La infraestructura de seguridad</h1>
+      <p class="slide-lede">Blockchain, NFTs y criptomonedas comparten la misma base: una infraestructura que permite confiar en una red de desconocidos, sin bancos ni autoridad central. Este componente cubre las tres piezas que lo hacen posible.</p>
+
+      <div class="topic-map">
+        <div class="topic-chip"><div class="tc-eyebrow">Pantalla 2</div><h3>Mecanismos de consenso — PoW y PoS</h3></div>
+        <div class="topic-chip"><div class="tc-eyebrow">Pantalla 3</div><h3>Criptografía de llave pública/privada</h3></div>
+        <div class="topic-chip"><div class="tc-eyebrow">Pantalla 4</div><h3>Resistencia a ataques — Ataque del 51%</h3></div>
+      </div>
+
+      <div class="anim-card">
+        <span class="field-label" style="margin-bottom: 2px;">Cómo se mueve y almacena la información</span>
+        <p style="font-size: 13.5px; margin-bottom: 6px;">Ya sea una transacción de criptomonedas o de un NFT, la infraestructura que la protege es la misma. Avanza paso a paso:</p>
+
+        <svg id="anim-scene" viewBox="0 0 820 400" role="img">
+          <title>Animación del flujo de una transacción en blockchain</title>
+          <desc>Muestra a un actor enviando una transacción a varios nodos de la red, que la validan, la agrupan en un bloque, la enlazan a la cadena y sincronizan su copia.</desc>
+
+          <!-- fan-out lines: actor -> 4 nodes -->
+          <path class="an-fanline" id="fan-1" d="M150,84 C150,140 150,150 150,178"></path>
+          <path class="an-fanline" id="fan-2" d="M150,84 C220,140 260,150 320,178"></path>
+          <path class="an-fanline" id="fan-3" d="M150,84 C300,140 420,150 490,178"></path>
+          <path class="an-fanline" id="fan-4" d="M150,84 C380,120 560,140 660,178"></path>
+
+          <!-- actors -->
+          <g class="an-actor active" id="actor-maria">
+            <circle cx="150" cy="60" r="24"></circle>
+            <text class="an-initial" x="150" y="66">M</text>
+            <text class="an-label" x="150" y="98" text-anchor="middle">María (envía)</text>
+          </g>
+
+          <!-- traveling packets -->
+          <circle class="an-packet" id="packet-1" cx="150" cy="60" r="7" style="--dx:0px; --dy:118px;" fill="#d1a53c"></circle>
+          <circle class="an-packet" id="packet-2" cx="150" cy="60" r="7" style="--dx:170px; --dy:118px;" fill="#7a95c4"></circle>
+          <circle class="an-packet" id="packet-3" cx="150" cy="60" r="7" style="--dx:340px; --dy:118px;" fill="#d1a53c"></circle>
+          <circle class="an-packet" id="packet-4" cx="150" cy="60" r="7" style="--dx:510px; --dy:118px;" fill="#7a95c4"></circle>
+
+          <!-- device nodes -->
+          <g class="an-node" id="node-1"><rect x="126" y="178" width="48" height="34" rx="4"></rect><line x1="150" y1="212" x2="150" y2="222"></line><text class="an-node-check" x="150" y="199" text-anchor="middle">✓</text><text class="an-label" x="150" y="238" text-anchor="middle">Nodo 1</text></g>
+          <g class="an-node" id="node-2"><rect x="296" y="178" width="48" height="34" rx="4"></rect><line x1="320" y1="212" x2="320" y2="222"></line><text class="an-node-check" x="320" y="199" text-anchor="middle">✓</text><text class="an-label" x="320" y="238" text-anchor="middle">Nodo 2</text></g>
+          <g class="an-node" id="node-3"><rect x="466" y="178" width="48" height="34" rx="4"></rect><line x1="490" y1="212" x2="490" y2="222"></line><text class="an-node-check" x="490" y="199" text-anchor="middle">✓</text><text class="an-label" x="490" y="238" text-anchor="middle">Nodo 3</text></g>
+          <g class="an-node" id="node-4"><rect x="636" y="178" width="48" height="34" rx="4"></rect><line x1="660" y1="212" x2="660" y2="222"></line><text class="an-node-check" x="660" y="199" text-anchor="middle">✓</text><text class="an-label" x="660" y="238" text-anchor="middle">Nodo 4</text></g>
+
+          <!-- chain -->
+          <g class="an-block" id="block-1"><rect class="an-block-body" x="110" y="310" width="70" height="50" rx="6"></rect><text x="168" y="322" font-family="IBM Plex Mono" font-size="11" fill="#d1a53c" text-anchor="middle">✓</text><text class="an-label" x="145" y="340" text-anchor="middle">Bloque 12</text></g>
+          <line class="an-link drawn" x1="180" y1="335" x2="204" y2="335"></line>
+          <g class="an-block" id="block-2"><rect class="an-block-body" x="204" y="310" width="70" height="50" rx="6"></rect><text x="262" y="322" font-family="IBM Plex Mono" font-size="11" fill="#d1a53c" text-anchor="middle">✓</text><text class="an-label" x="239" y="340" text-anchor="middle">Bloque 13</text></g>
+          <line class="an-link drawn" x1="274" y1="335" x2="298" y2="335"></line>
+          <g class="an-block" id="block-3"><rect class="an-block-body" x="298" y="310" width="70" height="50" rx="6"></rect><text x="356" y="322" font-family="IBM Plex Mono" font-size="11" fill="#d1a53c" text-anchor="middle">✓</text><text class="an-label" x="333" y="340" text-anchor="middle">Bloque 14</text></g>
+          <line class="an-link" id="link-new" x1="368" y1="335" x2="392" y2="335"></line>
+          <g class="an-block ghost" id="block-4">
+            <rect class="an-block-body" x="392" y="310" width="70" height="50" rx="6"></rect>
+            <g class="an-block-content">
+              <text x="415" y="332" font-family="IBM Plex Mono" font-size="11" fill="#e3bd5e">₿</text>
+              <rect x="432" y="323" width="10" height="10" fill="none" stroke="#7a95c4" stroke-width="1.4"></rect>
+            </g>
+            <text class="an-label" x="427" y="340" text-anchor="middle" style="opacity:0.001">·</text>
+            <text class="an-label" x="427" y="374" text-anchor="middle">Bloque 15 (nuevo)</text>
+          </g>
+        </svg>
+
+        <div class="anim-caption" id="anim-caption">Así es como una transacción viaja desde que se crea hasta que queda guardada para siempre. Los bloques 12-14 (✓) ya están confirmados y no cambian — observa cómo se forma el bloque 15, el nuevo.</div>
+
+        <div class="anim-controls">
+          <button class="btn btn-outline" id="anim-prev">← Paso anterior</button>
+          <button class="btn btn-brand" id="anim-next">Siguiente paso →</button>
+          <button class="btn btn-outline" id="anim-reset">Reiniciar</button>
+          <span class="anim-step-count"><span id="anim-step-num">0</span> / 6</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 2: CONSENSO ===== -->
+    <section class="slide" data-slide-panel>
+      <div class="slide-eyebrow">Pantalla 2 de 4 — Mecanismos de consenso</div>
+      <h1 class="slide-title">Proof of Work y Proof of Stake</h1>
+      <p class="slide-lede">¿Quién gana el derecho de proponer el siguiente bloque, y qué le cuesta hacer trampa? Dos respuestas distintas a la misma pregunta.</p>
+
+      <div class="grid-2">
+        <div class="theory-condensed">
+          <h3>Proof of Work</h3>
+          <ul>
+            <li>Los mineros compiten resolviendo un acertijo: encontrar un <strong>nonce</strong> tal que el hash del bloque cumpla el objetivo de dificultad.</li>
+            <li>Difícil de resolver (fuerza bruta con ASICs), fácil de verificar (un solo cálculo).</li>
+            <li>Costo = energía real gastada, sin importar el resultado.</li>
+          </ul>
+          <h3>Proof of Stake</h3>
+          <ul>
+            <li>Los validadores bloquean capital (<strong>staking</strong>) y son elegidos pseudo-aleatoriamente, ponderado por cuánto arriesgan.</li>
+            <li>Votan con firmas llamadas <strong>atestaciones</strong>.</li>
+            <li>Castigo: <strong>slashing</strong> — pierden parte o todo su stake si actúan mal.</li>
+          </ul>
+          <table class="compare">
+            <tr><th>Propiedad</th><th>PoW</th><th>PoS</th></tr>
+            <tr><td>Castigo</td><td>Costo externo, automático</td><td>Confiscación interna, requiere detección</td></tr>
+            <tr><td>Elección de cadena</td><td>Mayor dificultad acumulada</td><td>Mayor peso de atestaciones</td></tr>
+          </table>
+        </div>
+
+        <div class="practice-card">
+          <div class="tabs">
+            <button class="tab-btn active" id="tab-pow-btn">Proof of Work</button>
+            <button class="tab-btn" id="tab-pos-btn">Proof of Stake</button>
+          </div>
+          <div class="tab-panel active" id="panel-pow-tab">
+            <span class="field-label">Dificultad</span>
+            <div class="difficulty-pills">
+              <button class="diff-pill" data-diff="2">Fácil</button>
+              <button class="diff-pill active" data-diff="3">Media</button>
+              <button class="diff-pill" data-diff="4">Difícil</button>
+            </div>
+            <div class="row" style="margin-top: 14px;">
+              <button class="btn btn-brand" id="pow-mine-btn">Minar bloque</button>
+              <div class="seal" id="pow-seal"><svg viewBox="0 0 100 100" width="42" height="42" aria-hidden="true"><circle class="seal-ring" cx="50" cy="50" r="46"></circle><path class="seal-check" d="M30 52 L45 66 L72 34"></path></svg></div>
+            </div>
+            <div class="mine-stats">
+              <div class="mine-stat"><div class="num" id="pow-nonce">0</div><div class="lbl">Intentos</div></div>
+              <div class="mine-stat"><div class="num" id="pow-time">—</div><div class="lbl">Tiempo</div></div>
+            </div>
+            <span class="field-label">Hash del intento actual</span>
+            <div class="hash-box" id="pow-hash">—</div>
+          </div>
+          <div class="tab-panel" id="panel-pos-tab">
+            <div class="validators" id="pos-validators"></div>
+            <div class="row">
+              <button class="btn btn-brand" id="pos-select-btn">Elegir proponente</button>
+              <button class="btn btn-outline" id="pos-slash-btn" disabled>Simular slashing</button>
+            </div>
+            <p class="mono" id="pos-result" style="margin-top: 12px; min-height: 16px; color: var(--amber); font-size: 12.5px;"></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 3: CRIPTO ===== -->
+    <section class="slide" data-slide-panel>
+      <div class="slide-eyebrow">Pantalla 3 de 4 — Criptografía de llave pública/privada</div>
+      <h1 class="slide-title">El sello notarial digital</h1>
+      <p class="slide-lede">Cómo se prueba que una transacción es tuya, sin que exista un banco que lo certifique.</p>
+
+      <div class="grid-2">
+        <div class="theory-condensed">
+          <div class="concept-box">
+            <span class="cb-label">Analogía</span>
+            <p>Tu llave privada es un sello único que solo tú posees y nunca prestas. Tu llave pública es la ficha que prueba si algo fue estampado con ese sello — sin permitir fabricar uno nuevo.</p>
+          </div>
+          <h3>Lo que garantiza la firma</h3>
+          <ul>
+            <li><strong>Autenticidad:</strong> el sello demuestra quién lo estampó.</li>
+            <li><strong>Integridad:</strong> alterar el documento después de sellado invalida la marca.</li>
+            <li><strong>No repudio:</strong> nadie más tiene ese sello.</li>
+          </ul>
+          <h3>Específico de blockchain</h3>
+          <ul>
+            <li>Dirección ≠ llave pública: Satoshi aplicó doble hash como redundancia de seguridad.</li>
+            <li>Se firma el <strong>hash</strong> del mensaje, no el texto completo — por eficiencia.</li>
+          </ul>
+        </div>
+
+        <div class="practice-card">
+          <div class="row" style="justify-content: space-between; margin-bottom: 14px;">
+            <span class="field-label" style="margin: 0;">Llaves</span>
+            <span class="mono" id="sig-key-status" style="color: var(--ink-dim); font-size: 11.5px;">generando…</span>
+          </div>
+          <span class="field-label">Mensaje de la transacción</span>
+          <textarea id="sig-message" rows="2">Juan transfiere 5 BTC a María</textarea>
+          <div class="row" style="margin-top: 14px;">
+            <button class="btn btn-brand" id="sig-sign-btn" disabled>Firmar</button>
+            <button class="btn btn-amber" id="sig-verify-btn" disabled>Verificar</button>
+            <button class="btn btn-outline" id="sig-reset-btn">Nueva transacción</button>
+          </div>
+          <div id="sig-signature-wrap" style="margin-top: 14px; display: none;">
+            <span class="field-label">Firma (ECDSA real)</span>
+            <div class="hash-box" id="sig-signature-display"></div>
+          </div>
+          <div class="row" style="margin-top: 14px; align-items: center; min-height: 46px;">
+            <div class="seal" id="sig-seal"><svg viewBox="0 0 100 100" width="42" height="42" aria-hidden="true"><circle class="seal-ring" cx="50" cy="50" r="46"></circle><path class="seal-check" d="M30 52 L45 66 L72 34"></path></svg></div>
+            <span id="sig-result"></span>
+          </div>
+          <p style="margin-top: 6px; font-size: 12px;">Edita el mensaje y vuelve a verificar.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== SLIDE 4: ATAQUE ===== -->
+    <section class="slide" data-slide-panel>
+      <div class="slide-eyebrow">Pantalla 4 de 4 — Resistencia a ataques informáticos</div>
+      <h1 class="slide-title">El ataque del 51%</h1>
+      <p class="slide-lede">Hasta dónde llega la seguridad real — y por qué el número "51%" es más frágil de lo que parece.</p>
+
+      <div class="grid-2">
+        <div class="theory-condensed">
+          <ul>
+            <li><strong>Doble gasto:</strong> usar el mismo activo dos veces. Se evita forzando consenso sobre el historial.</li>
+            <li><strong>En PoW:</strong> más del 51% del poder de hash permite minar en secreto una cadena privada más larga.</li>
+            <li><strong>En PoS:</strong> más del 51% de la participación — un costo tan alto que suele ser autodestructivo.</li>
+          </ul>
+          <h3>Minería egoísta</h3>
+          <p>Eyal y Sirer demostraron que Bitcoin <strong>no</strong> es incentivo-compatible: un pool que oculta y publica bloques selectivamente puede invalidar trabajo honesto y quedarse con esas recompensas.</p>
+          <div class="concept-box insight-box">
+            <span class="cb-label">Para tu exposición</span>
+            <p>Con propagación de red favorable, la ventaja aparece con poder cercano a <strong>cero</strong>. Incluso tras mitigación, el umbral real baja a <strong>25%</strong> — no 51%.</p>
+          </div>
+        </div>
+
+        <div class="practice-card">
+          <span class="field-label">Poder del atacante: <strong id="attack-slider-value" style="color: var(--amber);">30%</strong></span>
+          <input type="range" id="attack-slider" min="0" max="100" value="30">
+          <div class="row" style="margin-top: 12px;">
+            <button class="btn btn-brand" id="attack-run-btn">Simular carrera de cadenas</button>
+          </div>
+          <div style="margin-top: 20px;">
+            <div class="chain-row"><div class="chain-label">Cadena honesta</div><div class="chain-track" id="attack-honest-chain"></div></div>
+            <div class="chain-row"><div class="chain-label">Cadena del atacante</div><div class="chain-track" id="attack-attacker-chain"></div></div>
+          </div>
+          <p id="attack-result" class="mono" style="min-height: 18px; font-size: 12.5px;"></p>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="deck-bottom">
+    <button class="btn btn-outline" id="slide-prev">← Pantalla anterior</button>
+    <button class="btn btn-brand" id="slide-next">Siguiente pantalla →</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const enc = new TextEncoder();
+  function bufferToHex(buffer) { return Array.from(new Uint8Array(buffer)).map(b => b.toString(16).padStart(2, '0')).join(''); }
+  async function sha256Hex(message) { const digest = await crypto.subtle.digest('SHA-256', enc.encode(message)); return bufferToHex(digest); }
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  /* ---------- Slide navigation ---------- */
+  const slidePanels = Array.from(document.querySelectorAll('[data-slide-panel]'));
+  const dotBtns = Array.from(document.querySelectorAll('.dot-btn'));
+  let currentSlide = 0;
+  function showSlide(n) {
+    currentSlide = Math.max(0, Math.min(slidePanels.length - 1, n));
+    slidePanels.forEach((p, i) => p.classList.toggle('active', i === currentSlide));
+    dotBtns.forEach((d, i) => d.classList.toggle('active', i === currentSlide));
+    document.getElementById('slide-counter').textContent = currentSlide + 1;
+    document.getElementById('slide-prev').disabled = currentSlide === 0;
+    document.getElementById('slide-next').disabled = currentSlide === slidePanels.length - 1;
+    window.scrollTo(0, 0);
+  }
+  dotBtns.forEach((d, i) => d.addEventListener('click', () => showSlide(i)));
+  document.getElementById('slide-prev').addEventListener('click', () => showSlide(currentSlide - 1));
+  document.getElementById('slide-next').addEventListener('click', () => showSlide(currentSlide + 1));
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight') showSlide(currentSlide + 1);
+    if (e.key === 'ArrowLeft') showSlide(currentSlide - 1);
+  });
+  showSlide(0);
+
+  /* ---------- Slide 1: info-flow animation ---------- */
+  const animSteps = [
+    {
+      caption: '1. María prepara la transacción y la firma con su llave privada.',
+      forward: () => { document.getElementById('actor-maria').classList.add('active'); },
+      backward: () => { document.getElementById('actor-maria').classList.remove('active'); }
+    },
+    {
+      caption: '2. La transmite a la red: no hay un servidor central, así que llega a varios nodos a la vez.',
+      forward: () => {
+        ['fan-1','fan-2','fan-3','fan-4'].forEach(id => document.getElementById(id).classList.add('drawn'));
+        ['packet-1','packet-2','packet-3','packet-4'].forEach(id => document.getElementById(id).classList.add('sent'));
+      },
+      backward: () => {
+        ['fan-1','fan-2','fan-3','fan-4'].forEach(id => document.getElementById(id).classList.remove('drawn'));
+        ['packet-1','packet-2','packet-3','packet-4'].forEach(id => document.getElementById(id).classList.remove('sent'));
+      }
+    },
+    {
+      caption: '3. Cada nodo valida la transacción de forma independiente: revisa la firma y las reglas del protocolo.',
+      forward: () => { ['node-1','node-2','node-3','node-4'].forEach(id => document.getElementById(id).classList.add('pulse')); },
+      backward: () => { ['node-1','node-2','node-3','node-4'].forEach(id => document.getElementById(id).classList.remove('pulse')); }
+    },
+    {
+      caption: '4. Las transacciones válidas se agrupan en un bloque nuevo — sea de una criptomoneda (₿) o de un NFT (◻).',
+      forward: () => { document.getElementById('block-4').classList.remove('ghost'); document.getElementById('block-4').classList.add('filled'); },
+      backward: () => { document.getElementById('block-4').classList.add('ghost'); document.getElementById('block-4').classList.remove('filled'); }
+    },
+    {
+      caption: '5. El bloque se enlaza al anterior mediante su hash — por eso se llama "cadena de bloques".',
+      forward: () => { document.getElementById('link-new').classList.add('drawn'); },
+      backward: () => { document.getElementById('link-new').classList.remove('drawn'); }
+    },
+    {
+      caption: '6. Todos los nodos actualizan su copia: la información no vive en un solo lugar, vive replicada en toda la red.',
+      forward: () => {
+        ['node-1','node-2','node-3','node-4'].forEach(id => { document.getElementById(id).classList.remove('pulse'); document.getElementById(id).classList.add('synced'); });
+      },
+      backward: () => {
+        ['node-1','node-2','node-3','node-4'].forEach(id => { document.getElementById(id).classList.remove('synced'); document.getElementById(id).classList.add('pulse'); });
+      }
+    }
+  ];
+  let animStep = 0;
+  const animCaption = document.getElementById('anim-caption');
+  const animStepNum = document.getElementById('anim-step-num');
+  const animPrevBtn = document.getElementById('anim-prev');
+  const animNextBtn = document.getElementById('anim-next');
+  const introCaption = animCaption.textContent;
+
+  function updateAnimButtons() {
+    animStepNum.textContent = animStep;
+    animPrevBtn.disabled = animStep === 0;
+    animNextBtn.disabled = animStep === animSteps.length;
+  }
+  animNextBtn.addEventListener('click', () => {
+    if (animStep >= animSteps.length) return;
+    animSteps[animStep].forward();
+    animCaption.textContent = animSteps[animStep].caption;
+    animStep++;
+    updateAnimButtons();
+  });
+  animPrevBtn.addEventListener('click', () => {
+    if (animStep === 0) return;
+    animStep--;
+    animSteps[animStep].backward();
+    animCaption.textContent = animStep === 0 ? introCaption : animSteps[animStep - 1].caption;
+    updateAnimButtons();
+  });
+  document.getElementById('anim-reset').addEventListener('click', () => {
+    while (animStep > 0) { animStep--; animSteps[animStep].backward(); }
+    animCaption.textContent = introCaption;
+    updateAnimButtons();
+  });
+  updateAnimButtons();
+
+  /* ---------- Slide 2: PoW ---------- */
+  const powMineBtn = document.getElementById('pow-mine-btn');
+  const powNonce = document.getElementById('pow-nonce');
+  const powTime = document.getElementById('pow-time');
+  const powHash = document.getElementById('pow-hash');
+  const powSeal = document.getElementById('pow-seal');
+  const diffPills = document.querySelectorAll('.diff-pill');
+  let currentDifficulty = 3;
+  diffPills.forEach(pill => {
+    pill.addEventListener('click', () => {
+      diffPills.forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      currentDifficulty = parseInt(pill.dataset.diff, 10);
+    });
+  });
+  async function mineBlock(difficulty) {
+    powMineBtn.disabled = true; powSeal.classList.remove('show');
+    const target = '0'.repeat(difficulty);
+    const blockData = 'bloque-skillswap-' + Date.now() + ':';
+    let nonce = 0;
+    const start = performance.now();
+    const batchSize = 60;
+    async function batch() {
+      for (let i = 0; i < batchSize; i++) {
+        const hex = await sha256Hex(blockData + nonce);
+        if (hex.startsWith(target)) return { nonce, hex, found: true };
+        nonce++;
+      }
+      return { found: false };
+    }
+    let result = { found: false };
+    while (!result.found) {
+      result = await batch();
+      powNonce.textContent = nonce.toLocaleString('es-ES');
+      powHash.textContent = result.hex || '(buscando…)';
+      await new Promise(r => requestAnimationFrame(r));
+    }
+    powNonce.textContent = result.nonce.toLocaleString('es-ES');
+    powHash.textContent = result.hex;
+    powTime.textContent = ((performance.now() - start) / 1000).toFixed(2) + 's';
+    powSeal.classList.add('show');
+    powMineBtn.disabled = false;
+  }
+  powMineBtn.addEventListener('click', () => mineBlock(currentDifficulty));
+
+  /* ---------- Slide 2: PoS ---------- */
+  const validatorsData = [
+    { name: 'Validador Ana', stake: 340 }, { name: 'Validador Luis', stake: 120 },
+    { name: 'Nodo-7', stake: 560 }, { name: 'Validador Beta', stake: 180 }
+  ];
+  const posContainer = document.getElementById('pos-validators');
+  const posSelectBtn = document.getElementById('pos-select-btn');
+  const posSlashBtn = document.getElementById('pos-slash-btn');
+  const posResult = document.getElementById('pos-result');
+  const maxStake = Math.max(...validatorsData.map(v => v.stake));
+  let selectedValidatorEl = null;
+  validatorsData.forEach((v, i) => {
+    const el = document.createElement('div');
+    el.className = 'validator-card'; el.dataset.index = i;
+    const heightPct = Math.round((v.stake / maxStake) * 100);
+    el.innerHTML = '<div class="name">' + v.name + '</div><div class="validator-bar-track"><div class="validator-bar-fill" style="height:' + heightPct + '%"></div></div><div class="stake">' + v.stake + ' ETH</div>';
+    posContainer.appendChild(el);
+  });
+  function pickWeighted(items) {
+    const total = items.reduce((sum, v) => sum + v.stake, 0);
+    let r = Math.random() * total;
+    for (const item of items) { if (r < item.stake) return item; r -= item.stake; }
+    return items[items.length - 1];
+  }
+  posSelectBtn.addEventListener('click', async () => {
+    posSelectBtn.disabled = true; posSlashBtn.disabled = true; posResult.textContent = '';
+    const cards = Array.from(posContainer.children);
+    cards.forEach(c => c.classList.remove('selected', 'slashed'));
+    const chosen = pickWeighted(validatorsData);
+    const chosenIndex = validatorsData.indexOf(chosen);
+    let delayMs = 70;
+    for (let i = 0; i < 14; i++) {
+      cards.forEach(c => c.classList.remove('spinning'));
+      const idx = i < 10 ? Math.floor(Math.random() * cards.length) : chosenIndex;
+      cards[idx].classList.add('spinning');
+      await delay(delayMs); delayMs += 18;
+    }
+    cards.forEach(c => c.classList.remove('spinning'));
+    cards[chosenIndex].classList.add('selected');
+    selectedValidatorEl = cards[chosenIndex];
+    posResult.textContent = 'Proponente elegido: ' + chosen.name + ' (' + chosen.stake + ' ETH en juego)';
+    posSelectBtn.disabled = false; posSlashBtn.disabled = false;
+  });
+  posSlashBtn.addEventListener('click', () => {
+    if (!selectedValidatorEl) return;
+    const idx = parseInt(selectedValidatorEl.dataset.index, 10);
+    const v = validatorsData[idx];
+    v.stake = Math.round(v.stake * 0.2);
+    selectedValidatorEl.querySelector('.validator-bar-fill').style.height = Math.round((v.stake / maxStake) * 100) + '%';
+    selectedValidatorEl.querySelector('.stake').textContent = v.stake + ' ETH';
+    selectedValidatorEl.classList.add('slashed');
+    posResult.textContent = 'Slashing aplicado a ' + v.name + ': perdió el 80% de su stake.';
+    posSlashBtn.disabled = true;
+  });
+
+  /* ---------- Slide 2: tabs ---------- */
+  document.getElementById('tab-pow-btn').addEventListener('click', () => {
+    document.getElementById('tab-pow-btn').classList.add('active');
+    document.getElementById('tab-pos-btn').classList.remove('active');
+    document.getElementById('panel-pow-tab').classList.add('active');
+    document.getElementById('panel-pos-tab').classList.remove('active');
+  });
+  document.getElementById('tab-pos-btn').addEventListener('click', () => {
+    document.getElementById('tab-pos-btn').classList.add('active');
+    document.getElementById('tab-pow-btn').classList.remove('active');
+    document.getElementById('panel-pos-tab').classList.add('active');
+    document.getElementById('panel-pow-tab').classList.remove('active');
+  });
+
+  /* ---------- Slide 3: firma ---------- */
+  const sigMessage = document.getElementById('sig-message');
+  const sigSignBtn = document.getElementById('sig-sign-btn');
+  const sigVerifyBtn = document.getElementById('sig-verify-btn');
+  const sigResetBtn = document.getElementById('sig-reset-btn');
+  const sigKeyStatus = document.getElementById('sig-key-status');
+  const sigSignatureWrap = document.getElementById('sig-signature-wrap');
+  const sigSignatureDisplay = document.getElementById('sig-signature-display');
+  const sigResult = document.getElementById('sig-result');
+  const sigSeal = document.getElementById('sig-seal');
+  let sigKeyPair = null, storedSignature = null;
+  async function generateKeys() {
+    sigKeyStatus.textContent = 'generando…';
+    sigKeyPair = await crypto.subtle.generateKey({ name: 'ECDSA', namedCurve: 'P-256' }, true, ['sign', 'verify']);
+    const rawPub = await crypto.subtle.exportKey('raw', sigKeyPair.publicKey);
+    const pubHex = bufferToHex(rawPub);
+    sigKeyStatus.textContent = pubHex.slice(0, 8) + '…' + pubHex.slice(-6);
+    sigSignBtn.disabled = false;
+  }
+  sigSignBtn.addEventListener('click', async () => {
+    sigResult.innerHTML = ''; sigSeal.classList.remove('show');
+    const msgBytes = enc.encode(sigMessage.value);
+    const sigBuffer = await crypto.subtle.sign({ name: 'ECDSA', hash: 'SHA-256' }, sigKeyPair.privateKey, msgBytes);
+    storedSignature = sigBuffer;
+    sigSignatureDisplay.textContent = bufferToHex(sigBuffer);
+    sigSignatureWrap.style.display = 'block';
+    sigVerifyBtn.disabled = false;
+  });
+  sigVerifyBtn.addEventListener('click', async () => {
+    if (!storedSignature) return;
+    const msgBytes = enc.encode(sigMessage.value);
+    const valid = await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, sigKeyPair.publicKey, storedSignature, msgBytes);
+    if (valid) {
+      sigResult.innerHTML = '<span class="result-badge result-ok">✓ Auténtica</span>';
+      sigSeal.classList.remove('show'); void sigSeal.offsetWidth; sigSeal.classList.add('show');
+    } else {
+      sigResult.innerHTML = '<span class="result-badge result-bad">✗ Rechazada</span>';
+      sigSeal.classList.remove('show');
+    }
+  });
+  sigResetBtn.addEventListener('click', () => {
+    sigMessage.value = 'Juan transfiere 5 BTC a María';
+    storedSignature = null; sigSignatureWrap.style.display = 'none';
+    sigResult.innerHTML = ''; sigSeal.classList.remove('show'); sigVerifyBtn.disabled = true;
+  });
+  generateKeys();
+
+  /* ---------- Slide 4: 51% attack ---------- */
+  const attackSlider = document.getElementById('attack-slider');
+  const attackSliderValue = document.getElementById('attack-slider-value');
+  const attackRunBtn = document.getElementById('attack-run-btn');
+  const honestChainEl = document.getElementById('attack-honest-chain');
+  const attackerChainEl = document.getElementById('attack-attacker-chain');
+  const attackResult = document.getElementById('attack-result');
+  attackSlider.addEventListener('input', () => { attackSliderValue.textContent = attackSlider.value + '%'; });
+  function appendBlock(container, n, type) { const b = document.createElement('div'); b.className = 'chain-block ' + type; b.textContent = n; container.appendChild(b); }
+  attackRunBtn.addEventListener('click', async () => {
+    attackRunBtn.disabled = true;
+    honestChainEl.innerHTML = ''; attackerChainEl.innerHTML = ''; attackResult.textContent = '';
+    const power = parseInt(attackSlider.value, 10);
+    const rounds = 24;
+    let honestCount = 0, attackerCount = 0;
+    for (let i = 0; i < rounds; i++) {
+      const roll = Math.random() * 100;
+      if (roll < power) { attackerCount++; appendBlock(attackerChainEl, attackerCount, 'attacker'); }
+      else { honestCount++; appendBlock(honestChainEl, honestCount, 'honest'); }
+      await delay(120);
+    }
+    const attackerWon = attackerCount > honestCount;
+    let msg;
+    if (attackerWon && power > 50) msg = 'El atacante terminó con la cadena más larga (' + attackerCount + ' vs ' + honestCount + '). La red adopta su versión por protocolo.';
+    else if (attackerWon && power <= 50) msg = 'La varianza favoreció al atacante esta vez (' + attackerCount + ' vs ' + honestCount + '), pero con ' + power + '% sus probabilidades caen exponencialmente a largo plazo.';
+    else if (!attackerWon && power > 50) msg = 'Esta corrida corta favoreció a la red honesta (' + honestCount + ' vs ' + attackerCount + '), pero con ' + power + '% sostenido el atacante tiende a ganar eventualmente.';
+    else msg = 'La cadena honesta se mantuvo más larga (' + honestCount + ' vs ' + attackerCount + ').';
+    attackResult.textContent = msg;
+    attackRunBtn.disabled = false;
+  });
+})();
+</script>
+</body>
+</html>
